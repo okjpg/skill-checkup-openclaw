@@ -1,6 +1,6 @@
 # Skill Checkup OpenClaw
 
-**v1.1.1 — mini-curso OpenClaw por Bruno Okamoto**
+**v1.1.2 — mini-curso OpenClaw por Bruno Okamoto**
 
 Skill instalável para auditar agentes no **OpenClaw**.
 
@@ -160,7 +160,7 @@ A skill sempre identifica o modo operacional do agente que está auditando:
 
 - `audit-only` — só pode diagnosticar e gerar plano
 - `fix-capable` — pode editar arquivos, fazer backup e corrigir coisas reversíveis
-- `full-maintenance` — pode mexer em serviço, gateway, permissões e host, sempre com aprovação humana para ações sensíveis
+- `full-maintenance` — pode mexer em serviço, gateway, permissões e host, sempre com aprovação humana para ações sensíveis. Reduz fricção operacional, mas não significa “sem aprovação” para update, firewall/SSH, envio externo, OAuth ou mudanças destrutivas.
 
 ## Exemplo de report
 
@@ -219,8 +219,8 @@ Audite se este agente OpenClaw está pronto para produção.
 
 ## Status
 
-Esta é uma **v1.1.1** em cima da v1 inicial.
+Esta é uma **v1.1.2** em cima da v1 inicial.
 
 Ela nasceu do mini-curso OpenClaw do Bruno Okamoto para ajudar alunos e operadores a enxergarem rapidamente se um agente está pronto, perigoso, lento, mal configurado ou só precisando de manutenção básica.
 
-A v1.1.1 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas e contrato rígido de saída no modo padrão. Ela ainda não tenta corrigir tudo automaticamente.
+A v1.1.2 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas, contrato rígido de saída no modo padrão e explicação curta sobre quando vale migrar para `full-maintenance`. Ela ainda não tenta corrigir tudo automaticamente.

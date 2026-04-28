@@ -9,7 +9,7 @@ type: skill
 category: operations
 status: ACTIVE
 owner: Bruno Okamoto / OpenClaw mini-course
-version: 1.1.1
+version: 1.1.2
 created: 2026-04-27
 last_reviewed: 2026-04-28
 estimated_time: 10min
@@ -56,6 +56,7 @@ Regras obrigatórias:
 - usar somente estas seções, nesta ordem: `Agent Readiness`, `Score`, `Veredito`, `Top 3 riscos que eu atacaria`, `Modo de execução`, `Eu posso assumir`, `Seu trabalho vai ser aprovar estas etapas`, `Próximo movimento`;
 - terminar com a chamada explícita: **“Só responde bora e eu monto o plano, faço backup e começo.”**;
 - mencionar que o próximo passo é montar plano/PRD de correção com backup antes da execução;
+- quando o modo não for `full-maintenance`, explicar em 1 frase que o usuário pode escolher delegar mais acesso/manutenção para reduzir fricção operacional, sem prometer “sem aprovação” para ações sensíveis;
 - não adicionar seções extras.
 
 Seções proibidas no `standard`:
@@ -118,6 +119,7 @@ Regras:
 - Auditoria read-only não exige full access.
 - Correção real geralmente exige `fix-capable`.
 - Correções de host/serviço/firewall exigem `full-maintenance` + aprovação humana.
+- `full-maintenance` reduz fricção operacional, mas não elimina aprovação para ações sensíveis, destrutivas, externas ou com risco de lockout.
 - Se faltar permissão, o PRD deve listar isso como pré-condição operacional, não como tarefa vaga para o usuário.
 
 ## Perfis de agente
@@ -515,6 +517,7 @@ Top 3 riscos que eu atacaria:
 Modo de execução:
 Existem 3 modos: `audit-only`, `fix-capable` e `full-maintenance`.
 Este agente está em **{modo}** — com isso, eu {posso fazer X / não posso fazer Y}.
+{Se modo != full-maintenance: Se você quiser uma jornada com menos pedidos operacionais, dá para me colocar em `full-maintenance`; ainda assim login/OAuth, firewall/SSH, update, envio externo e mudanças destrutivas continuam pedindo aprovação explícita.}
 
 Eu posso assumir:
 - Criar o plano de ação.
@@ -577,6 +580,8 @@ Nunca execute correções automaticamente sem pedido claro. Se o usuário aprova
 - Criar/autorizar token no GitHub/1Password.
 - Decidir abrir/fechar acesso externo.
 - Aplicar firewall/SSH em host onde lockout é possível.
+- Aprovar update/restart de gateway em agente produtivo.
+- Autorizar envio externo ou ação representando o usuário.
 - Enviar mensagem/email/post externo.
 - Qualquer ação destrutiva ou irreversível.
 

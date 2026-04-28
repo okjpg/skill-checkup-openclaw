@@ -9,7 +9,7 @@ type: skill
 category: operations
 status: ACTIVE
 owner: Bruno Okamoto / OpenClaw mini-course
-version: 1.0.0
+version: 1.1.0
 created: 2026-04-27
 last_reviewed: 2026-04-28
 estimated_time: 10min
@@ -185,6 +185,114 @@ Classificação:
 - ⚠️ falta acesso para o trabalho esperado;
 - 🔴 acesso demais para o contexto.
 
+
+## Critical Systems Deep Dive
+
+Algumas áreas são críticas demais para auditoria superficial. Quando qualquer uma delas aparecer como ausente, quebrada, desconhecida, degradada ou essencial para o perfil do agente, faça uma **análise cirúrgica obrigatória** antes de pontuar ou concluir.
+
+Áreas críticas:
+- memory / embeddings / FTS / LCM / recall;
+- backup / GitHub / rollback;
+- security / gateway / exec / elevated / sandbox;
+- secrets / `.env` / tokens / 1Password;
+- crons que executam ação externa ou backup;
+- runtime performance: sessões, SQLite, logs, media, cache, delivery queue.
+
+Fluxo obrigatório:
+
+1. **Fast scan** — detectar sinais de risco nas áreas críticas.
+2. **Surgical pass** — aprofundar somente nas áreas críticas detectadas ou essenciais para o agente.
+3. **Executive output** — continuar mostrando só score, veredito, top 3 riscos e próximo passo.
+4. **Deep appendix** — mostrar evidências completas somente no modo `deep` ou quando o usuário pedir.
+
+Regra: simplicidade na devolutiva não autoriza análise rasa. Se a área é crítica, verifique com evidência.
+
+### Surgical pass — Memory / Recall
+
+Use quando o agente depende de memória, contexto, segundo cérebro, busca, curso, atendimento recorrente ou personalização.
+
+Verifique, quando disponível:
+- arquivos totais vs arquivos indexados;
+- número de chunks;
+- FTS disponível;
+- embeddings disponíveis e cache pronto;
+- última indexação ou freshness provável;
+- erros recentes de indexação/search/LCM;
+- tamanho de `lcm.db`, bancos SQLite e caches;
+- presença de arquivos essenciais (`MEMORY.md`, `AGENTS.md`, `HEARTBEAT.md`, `TOOLS.md`) quando o template exigir;
+- fallback funcional se embeddings não estiverem disponíveis;
+- risco prático: o agente vai esquecer, alucinar recall, ficar lento ou só perder busca semântica?
+
+Comandos úteis:
+
+```bash
+openclaw memory status --deep || true
+find . -maxdepth 3 -type f \( -name 'MEMORY.md' -o -name 'AGENTS.md' -o -name 'HEARTBEAT.md' -o -name 'TOOLS.md' \) -print
+find ~/.openclaw -type f \( -name 'lcm.db' -o -name '*.sqlite' -o -name '*.db' \) -printf '%s %p\n' 2>/dev/null | sort -nr | head -20
+```
+
+Não conclua “memória ok” só porque existe `MEMORY.md`. Memória ok exige cobertura, busca ou fallback, e ausência de erro crítico.
+
+### Surgical pass — Backup / Rollback
+
+Use quando houver repo sujo, falta de remoto, host de produção, aluno/cliente real ou mudança planejada.
+
+Verifique:
+- `git remote -v`;
+- `git status --short`;
+- último commit;
+- branch tracking;
+- backup automático ou cron de sync;
+- snapshots existentes;
+- divergência local/remoto;
+- risco de sobrescrever trabalho humano.
+
+Não conclua “tem backup” só porque existe Git. Precisa haver remoto, frequência ou checkpoint verificável.
+
+### Surgical pass — Security / Access
+
+Use quando houver canal público/grupo, exec/elevated, gateway, SSH, tokens ou host remoto.
+
+Verifique:
+- `openclaw security audit --deep`;
+- gateway loopback vs público;
+- políticas de DM/grupo/canal;
+- exec/elevated/safeBins;
+- SSH/portas expostas;
+- fail2ban/UFW quando remoto;
+- multi-user context risk;
+- plugin allowlist e versões.
+
+Não normalize `exec full` sem cruzar com o perfil do agente. Em agente pessoal pode ser aceitável; em grupo público pode ser crítico.
+
+### Surgical pass — Secrets
+
+Use quando houver `.env`, tokens, logs, repo público, aluno/cliente ou suspeita de credencial hardcoded.
+
+Verifique sem revelar valores:
+- padrões de token;
+- `.env` commitado ou exposto;
+- credenciais fora do 1Password/secret manager;
+- logs com possíveis tokens;
+- repo público com arquivos sensíveis.
+
+Nunca cole segredo no relatório. Informe só tipo e path aproximado.
+
+### Surgical pass — Runtime Performance
+
+Use quando houver lentidão, sessões antigas, SQLite grande, logs grandes, crons ruidosos ou contexto próximo do limite.
+
+Verifique:
+- maiores arquivos de runtime;
+- número/tamanho/idade de sessões;
+- bancos SQLite/LCM/cache;
+- logs e media;
+- delivery failures;
+- crons com erro recorrente;
+- compaction/pruning configurados.
+
+Diferencie “grande mas saudável” de “grande e degradando uso”.
+
 ## Severidade e confiança
 
 Cada finding importante recebe internamente:
@@ -333,7 +441,13 @@ find . -name '.env' -not -path './.git/*'
 
 Não revelar valores de segredos no relatório. Registrar só path/tipo de risco.
 
-### 3. Classificar achados
+### 3. Fazer surgical pass nas áreas críticas
+
+Antes de classificar achados, revise o fast scan. Se memory, backup, security, secrets, crons externos ou runtime performance aparecerem como risco, desconhecidos ou essenciais para o perfil do agente, execute o **Critical Systems Deep Dive** correspondente.
+
+Não avance para score/veredito enquanto uma área crítica estiver baseada só em inferência superficial. Se não for possível verificar, marque como `unknown` e explique o impacto prático sem tratar como falha confirmada.
+
+### 4. Classificar achados
 
 Para cada achado relevante, registre internamente:
 
@@ -346,7 +460,7 @@ Para cada achado relevante, registre internamente:
   Dono: agente ou humano
 ```
 
-### 4. Gerar resposta padrão
+### 5. Gerar resposta padrão
 
 No modo `standard`, use exatamente esta estrutura curta:
 
@@ -381,7 +495,7 @@ Só responde **bora** e eu monto o plano, faço backup e começo.
 
 Não inclua tabela executiva no `standard` salvo se o usuário pedir. O fechamento deve reduzir carga cognitiva: não despeje uma lista de tarefas para o humano; transforme em plano que o agente pode executar e escale apenas os bloqueios humanos reais.
 
-### 5. Gerar modo deep
+### 6. Gerar modo deep
 
 No modo `deep`, depois da resposta padrão, adicione:
 
@@ -396,7 +510,7 @@ No modo `deep`, depois da resposta padrão, adicione:
 {comandos/paths sem segredos}
 ```
 
-### 6. Fechar com decisão leve
+### 7. Fechar com decisão leve
 
 No final, não despeje novas tarefas. Feche com uma chamada leve para ação:
 

@@ -1,6 +1,6 @@
 # Skill Checkup OpenClaw
 
-**v1 — mini-curso OpenClaw por Bruno Okamoto**
+**v1.1 — mini-curso OpenClaw por Bruno Okamoto**
 
 Skill instalável para auditar agentes no **OpenClaw**.
 
@@ -116,6 +116,26 @@ Se o agente tem acesso suficiente para resolver problemas sem ficar perigoso dem
 - cron/message/browser/nodes
 - modelo/provider/fallbacks/rate limit
 
+
+## Análise cirúrgica em áreas críticas
+
+A v1.1 adiciona uma regra importante: algumas áreas não podem ser avaliadas “por cima”.
+
+Quando a skill encontra risco ou incerteza em pontos críticos, ela faz um segundo passe mais cirúrgico antes de concluir:
+
+- memória, embeddings, FTS, LCM e recall;
+- backup, GitHub e rollback;
+- segurança, gateway, exec, elevated e sandbox;
+- secrets, `.env`, tokens e 1Password;
+- crons que executam ação externa ou backup;
+- performance: sessões, SQLite, logs, media, cache e filas de entrega.
+
+Isso não muda a promessa principal: a devolutiva continua simples.
+
+A diferença é que, por baixo, a skill é obrigada a verificar evidências antes de dizer que algo crítico está ok ou quebrado.
+
+Exemplo: ela não pode dizer “memória ok” só porque existe `MEMORY.md`. Precisa olhar cobertura, chunks, FTS/embeddings, freshness, erros e risco prático para recall.
+
 ## Como a resposta funciona
 
 A skill evita despejar todos os achados técnicos.
@@ -197,8 +217,8 @@ Audite se este agente OpenClaw está pronto para produção.
 
 ## Status
 
-Esta é uma **v1**.
+Esta é uma **v1.1** em cima da v1 inicial.
 
 Ela nasceu do mini-curso OpenClaw do Bruno Okamoto para ajudar alunos e operadores a enxergarem rapidamente se um agente está pronto, perigoso, lento, mal configurado ou só precisando de manutenção básica.
 
-A v1 prioriza clareza, segurança e próximo passo. Ela ainda não tenta corrigir tudo automaticamente.
+A v1.1 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas. Ela ainda não tenta corrigir tudo automaticamente.

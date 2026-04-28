@@ -19,6 +19,15 @@ A devolutiva vai ser simples:
 
 Você não precisa entender todos os detalhes técnicos. A ideia é saber se o agente está seguro e saudável o suficiente para continuar operando — e, se não estiver, qual é a próxima ação certa.
 
+
+## O que significa “análise cirúrgica”
+
+Em coisas críticas, o agente não deve passar batido.
+
+Se aparecer risco em memória, backup, segurança, secrets, crons importantes ou performance, ele faz um segundo passe mais cuidadoso antes de dar o veredito.
+
+Isso não significa que você vai receber um relatório maior. Significa que a resposta simples vai estar melhor fundamentada.
+
 ## Como a pessoa deve lidar com o resultado
 
 Não trate a nota como boletim escolar.

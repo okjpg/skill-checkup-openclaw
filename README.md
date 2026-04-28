@@ -1,6 +1,6 @@
 # Skill Checkup OpenClaw
 
-**v1.1.2 — mini-curso OpenClaw por Bruno Okamoto**
+**v1.2.0 — mini-curso OpenClaw por Bruno Okamoto**
 
 Skill instalável para auditar agentes no **OpenClaw**.
 
@@ -26,6 +26,7 @@ Ela assume que existem ou podem existir:
 - crons OpenClaw
 - workspace com `MEMORY.md`, `HEARTBEAT.md`, `AGENTS.md`, `TOOLS.md`
 - skills OpenClaw
+- paths de skills e scripts auxiliares
 - canais como Telegram, WhatsApp, Slack etc.
 
 Não é uma skill genérica para auditar qualquer servidor ou qualquer framework de agentes.
@@ -72,6 +73,40 @@ Se o agente está alinhado com o padrão ensinado no mini-curso:
 - políticas corretas para canais
 - 1Password ou equivalente seguro para credenciais
 - documentação mínima para o aluno entender a estrutura
+
+
+### Skill and script path integrity
+
+A v1.2.0 adiciona uma checagem importante para setups avançados: workspace raiz com múltiplos agentes isolados.
+
+Ela verifica se skills e scripts resolvem paths corretamente em cada contexto:
+
+- skills globais na raiz;
+- skills específicas por agente;
+- scripts citados em `SKILL.md`;
+- templates e arquivos auxiliares;
+- paths absolutos de outro workspace;
+- uso frágil de `../`, `~/`, `/root/...` ou `/home/...`;
+- registries apontando para arquivos inexistentes;
+- risco de um agente sensível carregar skill de outro agente.
+
+Exemplo: um agente de pacientes não deve herdar acidentalmente uma skill de vídeo/design da Sidecar, e uma skill da Sidecar não deve depender de script dentro do workspace do agente clínico.
+
+
+### Como fica o report em multi-workspace
+
+Mesmo quando existem vários agentes dentro de um workspace raiz, o report padrão continua curto.
+
+Ele pode mostrar um bloco pequeno de mapa detectado:
+
+```md
+Mapa detectado:
+- Raiz: skills globais/compartilhadas
+- Pacientes: skills clínicas/guardrails
+- Sidecar: vídeo/design/conteúdo
+```
+
+A lista completa de paths, scripts e duplicatas não aparece no report padrão. Ela fica para o modo `deep` ou para o PRD de correção depois que o usuário responder **bora**.
 
 ### 3. Runtime Performance Risk
 
@@ -128,7 +163,8 @@ Quando a skill encontra risco ou incerteza em pontos críticos, ela faz um segun
 - segurança, gateway, exec, elevated e sandbox;
 - secrets, `.env`, tokens e 1Password;
 - crons que executam ação externa ou backup;
-- performance: sessões, SQLite, logs, media, cache e filas de entrega.
+- performance: sessões, SQLite, logs, media, cache e filas de entrega;
+- paths de skills e scripts em setups multi-agente.
 
 Isso não muda a promessa principal: a devolutiva continua simples.
 
@@ -145,12 +181,13 @@ No modo padrão, a saída agora é contratual: não deve trazer “achados bons�
 A resposta padrão mostra:
 
 1. score de 0 a 100
-2. veredito claro
+2. confiança da análise
+3. veredito claro
 3. top 3 riscos que importam agora
 4. modo de execução atual
 5. o que o agente pode assumir
 6. quais etapas o humano precisa aprovar
-7. próximo passo simples
+8. próximo passo simples
 
 O relatório técnico completo só aparece se você pedir modo `deep`.
 
@@ -194,6 +231,17 @@ Próximo movimento:
 Só responde **bora** e eu monto o plano/PRD de correção, faço backup e começo.
 ```
 
+
+## Helper opcional para paths
+
+A v1.2.0 inclui um scanner read-only para ajudar o agente a auditar paths de skills e scripts:
+
+```bash
+python3 skill-checkup-openclaw/scripts/path_integrity_check.py .
+```
+
+Ele não corrige nada sozinho. Só gera evidências para o agente usar no checkup, no modo `deep` ou no PRD de correção após o usuário responder **bora**.
+
 ## Instalação
 
 Copie a pasta da skill para o diretório de skills do seu agente OpenClaw.
@@ -219,8 +267,8 @@ Audite se este agente OpenClaw está pronto para produção.
 
 ## Status
 
-Esta é uma **v1.1.2** em cima da v1 inicial.
+Esta é uma **v1.2.0** em cima da v1 inicial.
 
 Ela nasceu do mini-curso OpenClaw do Bruno Okamoto para ajudar alunos e operadores a enxergarem rapidamente se um agente está pronto, perigoso, lento, mal configurado ou só precisando de manutenção básica.
 
-A v1.1.2 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas, contrato rígido de saída no modo padrão e explicação curta sobre quando vale migrar para `full-maintenance`. Ela ainda não tenta corrigir tudo automaticamente.
+A v1.2.0 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas, contrato rígido de saída no modo padrão, explicação curta sobre quando vale migrar para `full-maintenance`, auditoria de paths de skills e scripts em setups multi-agente e um helper script opcional para path integrity. Ela ainda não tenta corrigir tudo automaticamente.

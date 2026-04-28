@@ -9,7 +9,7 @@ type: skill
 category: operations
 status: ACTIVE
 owner: Bruno Okamoto / OpenClaw mini-course
-version: 1.1.2
+version: 1.2.0
 created: 2026-04-27
 last_reviewed: 2026-04-28
 estimated_time: 10min
@@ -26,6 +26,10 @@ A pergunta central é:
 
 > Esse agente pode operar com usuário/cliente real? Se não, qual é o próximo movimento mais importante?
 
+
+## Recursos empacotados
+
+- `scripts/path_integrity_check.py` — scanner read-only para inventariar roots de skills, duplicatas, symlinks quebrados, refs de scripts e caminhos em `SKILL.md` e links quebrados de registries. Use em setups multi-workspace ou quando paths forem risco.
 
 ## Antes de rodar para usuário final
 
@@ -53,7 +57,7 @@ Tabela, checklist completo e evidências técnicas só entram no modo `deep` ou 
 No modo `standard`, a resposta final deve seguir **exatamente** o template da seção “Gerar resposta padrão”.
 
 Regras obrigatórias:
-- usar somente estas seções, nesta ordem: `Agent Readiness`, `Score`, `Veredito`, `Top 3 riscos que eu atacaria`, `Modo de execução`, `Eu posso assumir`, `Seu trabalho vai ser aprovar estas etapas`, `Próximo movimento`;
+- usar somente estas seções, nesta ordem: `Agent Readiness`, `Score/Confiança`, `Veredito`, `Mapa detectado` (somente se houver múltiplos workspaces/agentes), `Top 3 riscos que eu atacaria`, `Modo de execução`, `Eu posso assumir`, `Seu trabalho vai ser aprovar estas etapas`, `Próximo movimento`;
 - terminar com a chamada explícita: **“Só responde bora e eu monto o plano, faço backup e começo.”**;
 - mencionar que o próximo passo é montar plano/PRD de correção com backup antes da execução;
 - quando o modo não for `full-maintenance`, explicar em 1 frase que o usuário pode escolher delegar mais acesso/manutenção para reduzir fricção operacional, sem prometer “sem aprovação” para ações sensíveis;
@@ -66,7 +70,8 @@ Seções proibidas no `standard`:
 - `Checklist`;
 - `Evidências`;
 - `Detalhes técnicos`;
-- qualquer tabela não solicitada.
+- qualquer tabela não solicitada;
+- lista completa de paths/arquivos no standard.
 
 Se houver bons sinais ou problemas menores, use-os apenas internamente para calibrar score. Só entram na resposta se mudarem uma das 3 ações principais.
 
@@ -94,6 +99,10 @@ Isso está errado para `standard`: aumenta ruído, foge do contrato e não fecha
 6. **Acesso não é sempre bom.** Medir se há acesso suficiente sem estar perigoso demais.
 7. **Ação segura.** Qualquer execução corretiva exige backup antes.
 8. **Sem overwhelm.** Se o achado não muda a próxima ação, não entra no topo.
+9. **Explique recalibração.** Se uma auditoria mais profunda encontrar evidência nova e a nota cair, diga explicitamente que a queda veio da evidência nova, não da correção aplicada.
+10. **Não cure auditor calando boa prática.** Não sugerir hardcode de URLs/configs só para reduzir alerta. Primeiro classifique se `process.env` é configuração não sensível ou segredo real.
+11. **Paths são parte do produto.** Em setups com workspace raiz + múltiplos agentes, auditar integridade de paths de skills e scripts é obrigatório antes de dizer que skills estão ok.
+12. **Score é operacional, não gamificação.** A pessoa não deve “caçar nota”; deve reduzir risco real. Não sugerir mudanças cosméticas só para subir score.
 
 ## Modos
 
@@ -161,6 +170,8 @@ Checks:
 - `MEMORY.md`, `HEARTBEAT.md`, `AGENTS.md`, `TOOLS.md` quando o template exigir;
 - organização de workspace e estrutura de pastas;
 - skills organizadas e registry funcionando;
+- paths de skills e scripts válidos para o workspace raiz e para cada agente isolado;
+- sem skill apontando para script inexistente, caminho absoluto de outro agente ou `../` frágil;
 - security audit sem critical;
 - gateway loopback/token;
 - Telegram/WhatsApp com política certa;
@@ -233,7 +244,8 @@ Algumas áreas são críticas demais para auditoria superficial. Quando qualquer
 - security / gateway / exec / elevated / sandbox;
 - secrets / `.env` / tokens / 1Password;
 - crons que executam ação externa ou backup;
-- runtime performance: sessões, SQLite, logs, media, cache, delivery queue.
+- runtime performance: sessões, SQLite, logs, media, cache, delivery queue;
+- skill and script path integrity em setups multi-agente ou workspace raiz compartilhado.
 
 Fluxo obrigatório:
 
@@ -315,6 +327,16 @@ Verifique sem revelar valores:
 
 Nunca cole segredo no relatório. Informe só tipo e path aproximado.
 
+#### Heurística para `process.env`
+
+Nem todo `process.env` é segredo. Antes de classificar como critical ou sugerir patch:
+
+- **Config não sensível:** URLs/base URLs, portas, feature flags, nomes de ambiente, caminhos locais. Ex.: `VOBI_API`, `VOBI_CDP`, `PORT`, `BASE_URL`. Isso pode ser warning/low se estiver mal documentado, mas não é segredo por si só.
+- **Possível segredo:** nomes com `KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `PRIVATE`, `CLIENT_SECRET`, `WEBHOOK_SECRET`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, `GH_TOKEN`, `API_KEY`.
+- **Env-harvesting real:** código que enumera/exporta `process.env` inteiro, envia variáveis para rede/log externo, ou combina leitura ampla de env + transmissão remota sem allowlist clara.
+
+Regra: não recomendar substituir variável de ambiente por string hardcoded quando ela é configuração não sensível. Preferir allowlist explícita, validação de env, nomes menos ambíguos, comentário de segurança ou suppressão documentada do falso positivo.
+
 ### Surgical pass — Runtime Performance
 
 Use quando houver lentidão, sessões antigas, SQLite grande, logs grandes, crons ruidosos ou contexto próximo do limite.
@@ -329,6 +351,44 @@ Verifique:
 - compaction/pruning configurados.
 
 Diferencie “grande mas saudável” de “grande e degradando uso”.
+
+### Surgical pass — Skill and Script Path Integrity
+
+Use quando houver múltiplos agentes, workspace raiz compartilhado, skills na raiz + skills por agente, scripts auxiliares, symlinks, submodules, ou erro recorrente de “file not found”.
+
+Objetivo: garantir que cada agente consiga carregar e executar as skills certas sem vazar contexto entre agentes.
+
+Verifique:
+- inventário de pastas `skills/` no workspace raiz e em cada workspace/agente;
+- skills duplicadas com mesmo nome e conteúdo diferente;
+- referências em `SKILL.md` para scripts, templates, arquivos auxiliares e paths relativos;
+- scripts citados existem e são executáveis quando necessário;
+- paths relativos resolvem a partir do diretório da skill, não de um cwd acidental;
+- paths absolutos não apontam para workspace/agente errado;
+- uso frágil de `../`, `~/`, `/root/...`, `/home/...` que quebra em instalação de aluno;
+- symlinks quebrados;
+- registries (`skills/_registry.md`, categoria `_registry.md`) apontam para arquivos existentes;
+- separação entre skills globais compartilhadas e skills específicas de agente sensível;
+- risco de agente de pacientes carregar skill da “influencer/Sidecar” ou vice-versa.
+
+Comandos úteis:
+
+```bash
+find . -path '*/skills/*/SKILL.md' -print
+find . -path '*/skills/*' -type l -exec ls -la {} \;
+grep -RInE '(scripts/|\.sh|\.py|\.js|\.mjs|\.ts|\.json|\.md|/root/|/home/|~/|\.\./)' skills */skills 2>/dev/null | head -200
+find skills -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.mjs' \) -print
+# If this skill repo includes the helper script:
+python3 skill-checkup-openclaw/scripts/path_integrity_check.py .
+```
+
+Classificação:
+- path quebrado em skill essencial: high;
+- path absoluto de outro agente/workspace: high ou critical se vazar dados sensíveis;
+- registry stale sem impacto imediato: low/medium;
+- skills duplicadas entre raiz e agente: medium, high se carregamento for ambíguo.
+
+Regra: não dizer “skills ok” só porque `SKILL.md` existe. Skill ok significa que paths, scripts e arquivos auxiliares resolvem no contexto do agente auditado.
 
 ## Severidade e confiança
 
@@ -351,6 +411,18 @@ Cada finding importante recebe internamente:
 
 Comece em 100, aplique deduções confirmadas e depois travas.
 
+### Recalibração e comparação entre rodadas
+
+Se houver mais de uma rodada (`quick` → `standard` → `deep`, antes/depois de patch, ou aluno dizendo que “a nota baixou depois da correção”):
+
+1. Separar claramente **score de triagem**, **score recalibrado por evidência nova** e **score pós-correção**.
+2. Não comparar score superficial com score deep como se fossem a mesma régua.
+3. Se o score cair após auditoria mais profunda, explicar: “a nota caiu porque apareceram evidências novas; não significa que a correção piorou o sistema”.
+4. Se o score cair após patch, identificar qual eixo piorou e se a correção criou regressão real, tradeoff aceitável ou falso positivo.
+5. Quando possível, mostrar uma linha curta: `52 triagem → 45 deep com criticals → 82 pós-correção`.
+
+No modo `standard`, essa explicação deve caber dentro do `Veredito` ou do risco relevante. Não criar seção extra. Reforce que o objetivo não é “ganhar nota”, é reduzir risco real.
+
 ### Deduções sugeridas
 
 | Problema verificado | Dedução |
@@ -361,12 +433,15 @@ Comece em 100, aplique deduções confirmadas e depois travas.
 | Memória crítica ausente/corrompida | -15 |
 | Sem memória semântica e sem fallback FTS em agente dependente de memória | -12 |
 | Skills registry quebrado | -10 |
+| Paths de skills/scripts quebrados em skill essencial | -10 a -20 |
+| Skill path mistura agente sensível com agente público/marketing | -15 a -25 |
 | Sem heartbeat em agente proativo | -8 |
 | Cron essencial falhando repetidamente | -8 |
 | Sem watchdog/restart em host remoto | -12 |
 | Runtime degradado por sessão/cache/logs | -10 a -20 |
 | Gateway exposto sem proteção clara | -25 |
-| Segredo hardcoded | -30 |
+| Segredo real hardcoded | -30 |
+| Possível falso positivo de secret/env sem evidência de valor sensível | -0 a -5 |
 | SSH/root remoto inseguro | -15 |
 | Falta acesso essencial para executar função do agente | -10 |
 | Acesso excessivo para contexto multiusuário | -10 a -25 |
@@ -379,7 +454,8 @@ Aplique o menor teto que aparecer:
 
 | Condição | Score máximo |
 |---|---:|
-| Segredo real hardcoded | 40 |
+| Segredo real hardcoded ou token exposto | 40 |
+| Env-harvesting real confirmado | 40 |
 | Gateway público sem auth/firewall | 35 |
 | Exec/elevated perigoso em grupo público | 45 |
 | Sem backup e sem Git remoto | 60 |
@@ -433,6 +509,7 @@ git remote -v
 git log --oneline -1
 find skills -name SKILL.md | wc -l
 find . -maxdepth 2 -name MEMORY.md -o -name HEARTBEAT.md -o -name AGENTS.md -o -name TOOLS.md
+find . -path '*/skills/*/SKILL.md' -print
 ```
 
 Performance:
@@ -480,7 +557,7 @@ Não revelar valores de segredos no relatório. Registrar só path/tipo de risco
 
 ### 3. Fazer surgical pass nas áreas críticas
 
-Antes de classificar achados, revise o fast scan. Se memory, backup, security, secrets, crons externos ou runtime performance aparecerem como risco, desconhecidos ou essenciais para o perfil do agente, execute o **Critical Systems Deep Dive** correspondente.
+Antes de classificar achados, revise o fast scan. Se memory, backup, security, secrets, crons externos, runtime performance ou paths de skills e scripts aparecerem como risco, desconhecidos ou essenciais para o perfil do agente, execute o **Critical Systems Deep Dive** correspondente.
 
 Não avance para score/veredito enquanto uma área crítica estiver baseada só em inferência superficial. Se não for possível verificar, marque como `unknown` e explique o impacto prático sem tratar como falha confirmada.
 
@@ -497,6 +574,23 @@ Para cada achado relevante, registre internamente:
   Dono: agente ou humano
 ```
 
+### 5.1 Multi-workspace output rule
+
+Se detectar múltiplos workspaces/agentes, mantenha o `standard` simples. Adicione somente um bloco curto `Mapa detectado`, com no máximo 4 linhas:
+
+```md
+Mapa detectado:
+- Raiz: skills globais/compartilhadas
+- Agente pacientes: skills clínicas/guardrails
+- Sidecar: vídeo/design/conteúdo
+```
+
+Regras:
+- não listar todos os arquivos, scripts ou paths no standard;
+- não gerar um sub-relatório por workspace;
+- se houver problema de path, ele deve aparecer como um dos Top 3 riscos apenas quando muda a próxima ação;
+- detalhes completos ficam no `deep` ou no PRD/plano após o usuário responder **bora**.
+
 ### 5. Gerar resposta padrão
 
 No modo `standard`, use exatamente esta estrutura curta e **não adicione nenhuma seção além dela**:
@@ -505,9 +599,17 @@ No modo `standard`, use exatamente esta estrutura curta e **não adicione nenhum
 # Agent Readiness — {nome}
 
 Score: {N}/100 — {veredito}
+Confiança: {alta | média | baixa} — {1 frase curta se houver área crítica não verificada}
 
 Veredito:
 {1-3 frases. Pode operar? Em que condição?}
+
+{Se houver múltiplos workspaces/agentes:
+Mapa detectado:
+- {Raiz/agente 1: função}
+- {Agente 2: função}
+- {Agente 3: função}
+}
 
 Top 3 riscos que eu atacaria:
 1. {risco + impacto}
@@ -546,6 +648,9 @@ No modo `deep`, depois da resposta padrão, adicione:
 
 ## Apêndice técnico
 {comandos/paths sem segredos}
+
+## Path inventory
+{somente no deep: workspace raiz, agentes, skill roots, duplicatas, refs quebradas}
 ```
 
 ### 7. Fechar com decisão leve
@@ -554,7 +659,7 @@ No final, não despeje novas tarefas. Feche com uma chamada leve para ação:
 
 > “Só responde **bora** e eu monto o plano/PRD de correção, faço backup e começo.”
 
-Se o usuário aprovar, crie um PRD de correção passo a passo. O PRD deve começar com backup/snapshot, declarar o modo de permissão necessário (`audit-only`, `fix-capable` ou `full-maintenance`), separar o que o agente executa sozinho e marcar exatamente onde precisa de humano para login, conta, OAuth, token, firewall/SSH ou aprovação externa.
+Se o usuário aprovar, crie um PRD de correção passo a passo. Em setup multi-workspace, o PRD deve incluir um mapa de escopo: skills globais, skills por agente, scripts compartilhados, paths a corrigir e testes de carregamento por agente. O PRD deve começar com backup/snapshot, declarar o modo de permissão necessário (`audit-only`, `fix-capable` ou `full-maintenance`), separar o que o agente executa sozinho, marcar exatamente onde precisa de humano para login, conta, OAuth, token, firewall/SSH ou aprovação externa, e terminar com critérios de sucesso + re-run do checkup para comparar score recalibrado vs pós-correção.
 
 Regra: a próxima ação padrão após o audit é **oferecer planejamento executável + backup**, não jogar tarefas no humano.
 
@@ -632,6 +737,7 @@ Colocar no topo:
 # Agent Readiness — bot-curso-teste
 
 Score: 68/100 — ⚠️ Operável com ressalvas
+Confiança: alta — evidências principais verificadas.
 
 Veredito:
 Pode operar em teste. Eu não colocaria aluno real ainda porque falta rollback confiável e watchdog.

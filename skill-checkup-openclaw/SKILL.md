@@ -9,7 +9,7 @@ type: skill
 category: operations
 status: ACTIVE
 owner: Bruno Okamoto / OpenClaw mini-course
-version: 1.1.0
+version: 1.1.1
 created: 2026-04-27
 last_reviewed: 2026-04-28
 estimated_time: 10min
@@ -47,6 +47,41 @@ A skill pode avaliar muita coisa por baixo, mas a resposta padrão mostra só:
 6. Próximo passo que o agente assume
 
 Tabela, checklist completo e evidências técnicas só entram no modo `deep` ou se o usuário pedir.
+
+## Output Contract — standard
+
+No modo `standard`, a resposta final deve seguir **exatamente** o template da seção “Gerar resposta padrão”.
+
+Regras obrigatórias:
+- usar somente estas seções, nesta ordem: `Agent Readiness`, `Score`, `Veredito`, `Top 3 riscos que eu atacaria`, `Modo de execução`, `Eu posso assumir`, `Seu trabalho vai ser aprovar estas etapas`, `Próximo movimento`;
+- terminar com a chamada explícita: **“Só responde bora e eu monto o plano, faço backup e começo.”**;
+- mencionar que o próximo passo é montar plano/PRD de correção com backup antes da execução;
+- não adicionar seções extras.
+
+Seções proibidas no `standard`:
+- `Achados bons`;
+- `Problemas menores`;
+- `Observações`;
+- `Checklist`;
+- `Evidências`;
+- `Detalhes técnicos`;
+- qualquer tabela não solicitada.
+
+Se houver bons sinais ou problemas menores, use-os apenas internamente para calibrar score. Só entram na resposta se mudarem uma das 3 ações principais.
+
+Falha conhecida a evitar:
+
+```md
+Achados bons:
+• Gateway local em loopback...
+
+Problemas menores:
+• Embeddings sem quota...
+
+Próximo movimento recomendado: fazer um plano curto...
+```
+
+Isso está errado para `standard`: aumenta ruído, foge do contrato e não fecha com o PRD/backup assumido pelo agente.
 
 ## Princípios
 
@@ -462,7 +497,7 @@ Para cada achado relevante, registre internamente:
 
 ### 5. Gerar resposta padrão
 
-No modo `standard`, use exatamente esta estrutura curta:
+No modo `standard`, use exatamente esta estrutura curta e **não adicione nenhuma seção além dela**:
 
 ```md
 # Agent Readiness — {nome}
@@ -490,10 +525,10 @@ Seu trabalho vai ser aprovar estas etapas:
 - {login/OAuth/conta/token/firewall/SSH/envio externo, somente quando necessário}
 
 Próximo movimento:
-Só responde **bora** e eu monto o plano, faço backup e começo.
+Só responde **bora** e eu monto o plano/PRD de correção, faço backup e começo.
 ```
 
-Não inclua tabela executiva no `standard` salvo se o usuário pedir. O fechamento deve reduzir carga cognitiva: não despeje uma lista de tarefas para o humano; transforme em plano que o agente pode executar e escale apenas os bloqueios humanos reais.
+Não inclua tabela executiva no `standard` salvo se o usuário pedir. Não inclua “achados bons”, “problemas menores” ou observações técnicas. O fechamento deve reduzir carga cognitiva: não despeje uma lista de tarefas para o humano; transforme em plano que o agente pode executar e escale apenas os bloqueios humanos reais.
 
 ### 6. Gerar modo deep
 
@@ -514,7 +549,7 @@ No modo `deep`, depois da resposta padrão, adicione:
 
 No final, não despeje novas tarefas. Feche com uma chamada leve para ação:
 
-> “Só responde **bora** e eu monto o plano, faço backup e começo.”
+> “Só responde **bora** e eu monto o plano/PRD de correção, faço backup e começo.”
 
 Se o usuário aprovar, crie um PRD de correção passo a passo. O PRD deve começar com backup/snapshot, declarar o modo de permissão necessário (`audit-only`, `fix-capable` ou `full-maintenance`), separar o que o agente executa sozinho e marcar exatamente onde precisa de humano para login, conta, OAuth, token, firewall/SSH ou aprovação externa.
 

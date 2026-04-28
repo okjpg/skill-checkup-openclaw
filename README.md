@@ -1,6 +1,6 @@
 # Skill Checkup OpenClaw
 
-**v1.1 — mini-curso OpenClaw por Bruno Okamoto**
+**v1.1.1 — mini-curso OpenClaw por Bruno Okamoto**
 
 Skill instalável para auditar agentes no **OpenClaw**.
 
@@ -140,6 +140,8 @@ Exemplo: ela não pode dizer “memória ok” só porque existe `MEMORY.md`. Pr
 
 A skill evita despejar todos os achados técnicos.
 
+No modo padrão, a saída agora é contratual: não deve trazer “achados bons”, “problemas menores”, checklist ou tabela técnica. Esses pontos ficam internos, usados só para calibrar score e escolher os top 3 riscos.
+
 A resposta padrão mostra:
 
 1. score de 0 a 100
@@ -189,7 +191,7 @@ Seu trabalho vai ser aprovar estas etapas:
 - Firewall/SSH antes de aplicar.
 
 Próximo movimento:
-Só responde **bora** e eu monto o plano, faço backup e começo.
+Só responde **bora** e eu monto o plano/PRD de correção, faço backup e começo.
 ```
 
 ## Instalação
@@ -217,8 +219,8 @@ Audite se este agente OpenClaw está pronto para produção.
 
 ## Status
 
-Esta é uma **v1.1** em cima da v1 inicial.
+Esta é uma **v1.1.1** em cima da v1 inicial.
 
 Ela nasceu do mini-curso OpenClaw do Bruno Okamoto para ajudar alunos e operadores a enxergarem rapidamente se um agente está pronto, perigoso, lento, mal configurado ou só precisando de manutenção básica.
 
-A v1.1 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas. Ela ainda não tenta corrigir tudo automaticamente.
+A v1.1.1 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas e contrato rígido de saída no modo padrão. Ela ainda não tenta corrigir tudo automaticamente.

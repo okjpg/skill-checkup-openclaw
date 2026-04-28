@@ -26,6 +26,13 @@ A pergunta central é:
 
 > Esse agente pode operar com usuário/cliente real? Se não, qual é o próximo movimento mais importante?
 
+
+## Antes de rodar para usuário final
+
+Se este repositório incluir `ANTES-DE-RODAR.md`, leia esse arquivo antes de executar a auditoria para uma pessoa não técnica. Ele contém a explicação simples de contexto, como preparar expectativa e como orientar a leitura do resultado.
+
+Use essa explicação para deixar claro que a skill escaneia muita coisa internamente, mas devolve só o que importa: score, veredito, top 3 riscos, responsabilidades e próximo passo.
+
 ## Regra-mãe
 
 **Executive-first. Deep internally. Short by default.**

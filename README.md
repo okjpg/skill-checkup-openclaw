@@ -30,6 +30,13 @@ Ela assume que existem ou podem existir:
 
 Não é uma skill genérica para auditar qualquer servidor ou qualquer framework de agentes.
 
+
+## Para agentes: leia antes de rodar
+
+Antes de executar a skill para uma pessoa, leia [`ANTES-DE-RODAR.md`](ANTES-DE-RODAR.md).
+
+Esse arquivo explica, em linguagem simples, como apresentar o checkup para usuários não técnicos e como evitar transformar a auditoria em um relatório técnico gigante.
+
 ## O que ela analisa
 
 A auditoria calcula internamente 5 eixos.

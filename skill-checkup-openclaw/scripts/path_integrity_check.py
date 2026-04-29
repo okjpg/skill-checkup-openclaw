@@ -26,11 +26,14 @@ def parse_name(skill: Path) -> str:
     return skill.parent.name
 
 
-def find_skill_roots(root: Path):
+def find_skill_files(root: Path):
+    names = {'SKILL.md', 'SKILL.fixture.md'}
+    return sorted(p for p in root.rglob('*') if p.is_file() and p.name in names and not is_hidden_or_vendor(p))
+
+
+def find_skill_roots(root: Path, skill_files):
     roots = set()
-    for p in root.rglob('SKILL.md'):
-        if is_hidden_or_vendor(p):
-            continue
+    for p in skill_files:
         # nearest skills ancestor, if any
         for anc in p.parents:
             if anc.name == 'skills' or anc == root:
@@ -50,8 +53,8 @@ def main() -> int:
     args = ap.parse_args()
 
     root = Path(args.root).expanduser().resolve()
-    skill_files = [p for p in root.rglob('SKILL.md') if not is_hidden_or_vendor(p)]
-    skill_roots = find_skill_roots(root)
+    skill_files = find_skill_files(root)
+    skill_roots = find_skill_roots(root, skill_files)
 
     by_name: dict[str, list[Path]] = {}
     for p in skill_files:

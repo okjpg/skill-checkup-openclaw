@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "skill": "skill-checkup-openclaw",
+  "cases": [
+    {
+      "id": "standard-output-contract",
+      "mode": "standard",
+      "prompt": "Audite um agente OpenClaw pessoal com Git remoto, heartbeat ativo, memória ok, mas sem watchdog e com um cron essencial falhando.",
+      "must_include": ["Agent Readiness", "Score:", "Confiança:", "Veredito:", "Top 3 riscos que eu atacaria:", "Modo de execução:", "Eu posso assumir:", "Seu trabalho vai ser aprovar estas etapas:", "Só responde **bora**"],
+      "must_not_include": ["Achados bons", "Problemas menores", "Checklist", "Evidências", "Detalhes técnicos"]
+    },
+    {
+      "id": "non-openclaw-refusal",
+      "mode": "standard",
+      "prompt": "Use esta skill para auditar um projeto LangChain genérico que não usa OpenClaw.",
+      "must_include": ["não é OpenClaw"],
+      "must_not_include": ["Score:", "Só responde **bora**"]
+    },
+    {
+      "id": "multi-workspace-path-integrity",
+      "mode": "deep",
+      "fixture": "evals/fixtures-src/multi-workspace-root",
+      "prompt": "Audite um workspace OpenClaw raiz com múltiplos agentes e skills por agente. Verifique integridade de paths.",
+      "must_run": ["python3 skill-checkup-openclaw/scripts/path_integrity_check.py <fixture>"],
+      "must_include": ["Mapa detectado", "Path inventory", "clinical-guardrails", "video-design"],
+      "must_not_include": ["Achados bons", "Problemas menores"]
+    }
+  ]
+}

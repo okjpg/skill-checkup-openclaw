@@ -1,6 +1,6 @@
 # Skill Checkup OpenClaw
 
-**v1.2.0 — mini-curso OpenClaw por Bruno Okamoto**
+**v1.3.0 — mini-curso OpenClaw por Bruno Okamoto**
 
 Skill instalável para auditar agentes no **OpenClaw**.
 
@@ -244,13 +244,20 @@ Ele não corrige nada sozinho. Só gera evidências para o agente usar no checku
 
 ## Instalação
 
-Copie a pasta da skill para o diretório de skills do seu agente OpenClaw.
+Copie a **pasta inteira** da skill para o diretório de skills do seu agente OpenClaw. Não copie só o `SKILL.md`: a skill depende de `scripts/` e `references/`.
 
 Exemplo:
 
 ```bash
-mkdir -p ~/.openclaw/skills/skill-checkup-openclaw
-cp skill-checkup-openclaw/SKILL.md ~/.openclaw/skills/skill-checkup-openclaw/SKILL.md
+cp -R skill-checkup-openclaw ~/.openclaw/skills/
+```
+
+Validação rápida:
+
+```bash
+test -f ~/.openclaw/skills/skill-checkup-openclaw/SKILL.md
+test -f ~/.openclaw/skills/skill-checkup-openclaw/scripts/path_integrity_check.py
+test -d ~/.openclaw/skills/skill-checkup-openclaw/references
 ```
 
 Depois peça ao agente:
@@ -267,8 +274,8 @@ Audite se este agente OpenClaw está pronto para produção.
 
 ## Status
 
-Esta é uma **v1.2.0** em cima da v1 inicial.
+Esta é uma **v1.3.0** em cima da v1 inicial.
 
 Ela nasceu do mini-curso OpenClaw do Bruno Okamoto para ajudar alunos e operadores a enxergarem rapidamente se um agente está pronto, perigoso, lento, mal configurado ou só precisando de manutenção básica.
 
-A v1.2.0 prioriza clareza, segurança e próximo passo, com análise cirúrgica obrigatória nas áreas críticas, contrato rígido de saída no modo padrão, explicação curta sobre quando vale migrar para `full-maintenance`, auditoria de paths de skills e scripts em setups multi-agente e um helper script opcional para path integrity. Ela ainda não tenta corrigir tudo automaticamente.
+A v1.3.0 prioriza empacotamento confiável para curso/terceiros: instalação da pasta inteira, apenas um `SKILL.md` real no repo, evals mínimos, fixtures não detectáveis por scanner de skills e `SKILL.md` enxuto com referências em `references/`. Ela mantém análise cirúrgica nas áreas críticas, contrato rígido de saída no modo padrão e helper opcional para path integrity. Ainda não tenta corrigir tudo automaticamente.
